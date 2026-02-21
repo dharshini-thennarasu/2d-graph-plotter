@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js" defer></script>
+    <style>
+        /* Add your CSS styles here */
+        .tab-content {
+            display: none; /* Hide all tab contents by default */
+        }
+
+        #home {
+            display: block; /* Show home content by default */
+        }
+
+        .dashboard-container {
+            width: 80%;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .tabs {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+
+        .tab-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .tab-content {
+            margin-top: 20px;
+        }
+
+        #graphCanvas {
+            display: block;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+        }
+        canvas {
+            max-width: 600px;
+            margin-top: 20px;   
+        }
+        .student-graph {
+            margin-bottom: 20px;
+        }
+
+        .feedback-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h2>Welcome, Teacher!</h2>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab-btn" onclick="showTab('home')">Home</button>
+            <button class="tab-btn" onclick="showTab('plot-graph')">Plot Graph</button>
+            <button class="tab-btn" onclick="showTab('view-graphs')">View Graphs</button>
+            <button class="tab-btn" onclick="showTab('feedback')">Provide Feedback</button>
+            <form action="/logout" method="POST" style="display: inline;">
+                <button type="submit" class="tab-btn">Logout</button>
+            </form>
+        </div>
+
+        <!-- Home Tab Content -->
+        <div id="home" class="tab-content">
+            <h3>Welcome to the 2D Graph Plotter!</h3>
+            <p id="teacher-home-content">
+                Here you can view student submissions, plot graphs, and provide feedback.
+            </p>
+        </div>
+
+        <!-- Plot Graph Tab -->
+        <div id="plot-graph" class="tab-content">
+            <h3>Plot Graph</h3>
+            <input type="text" id="equation" placeholder="Enter equation (e.g., 2*x + 3)">
+            <input type="color" id="color" value="#ff0000">
+            <select id="pattern">
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+            </select>
+            <button type="button" id="plotGraphBtn">Plot Graph</button>
+            <button type="button" id="clearGraphBtn">Clear Graph</button>
+            <canvas id="graphCanvas" width="600" height="400"></canvas>
+            </form>
+        </div>
+
+        <!-- View Graphs Tab -->
+        <div id="view-graphs" class="tab-content">
+            <h3>View Student Graphs</h3>
+            <div id="student-graphs-container">
+                <!-- Dynamically loaded student graphs will appear here -->
+            </div>
+        </div>
+
+        <!-- Provide Feedback Tab -->
+        <div id="feedback" class="tab-content">
+            <h3>Provide Feedback</h3>
+            <form id="feedback-form">
+                <label for="studentUsername">Student's Username:</label>
+                <input type="text" id="studentUsername" name="studentUsername" required>
+
+                <label for="feedbackMessage">Feedback Message:</label>
+                <textarea id="feedbackMessage" name="feedbackMessage" required></textarea>
+
+                <button type="submit">Send Feedback</button>
+            </form>
+            <div id="feedback-status"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Fetch and display student graphs
+            fetch('/get-student-graphs')
+                .then(response => response.json())
+                .then(graphs => {
+                    const container = document.getElementById('student-graphs-container');
+                    container.innerHTML = '';
+                    graphs.forEach(graph => {
+                        const graphDiv = document.createElement('div');
+                        graphDiv.classList.add('student-graph');
+                        graphDiv.innerHTML = `
+                            <h4>${graph.student_username}</h4>
+                            <canvas id="graphCanvas${graph.id}" width="600" height="400"></canvas>
+                            <button class="view-feedback-btn" data-username="${graph.student_username}" data-graph-id="${graph.id}">View Feedback</button>
+                        `;
+                        container.appendChild(graphDiv);
+
+                        const ctx = document.getElementById(`graphCanvas${graph.id}`).getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                datasets: [{
+                                    label: `Graph: ${graph.equation}`,
+                                    borderColor: graph.color,
+                                    data: graph.data
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    x: { type: 'linear', position: 'bottom' }
+                                }
+                            }
+                        });
+                    });
+                });
+
+            // Handle Graph Plotting
+            let chartInstance = null; // Global variable to hold the chart instance
+            let datasets = []; // Array to hold multiple datasets (graphs)
+
+            document.getElementById('plotGraphBtn').addEventListener('click', () => {
+                const equation = document.getElementById('equation').value.trim();
+                const color = document.getElementById('color').value;
+                const pattern = document.getElementById('pattern').value;
+
+                if (!equation) {
+                    alert("Please enter a valid equation.");
+                    return;
+                }
+
+                // Select canvas and context for graph
+                const ctx = document.getElementById('graphCanvas').getContext('2d');
+
+                // Prepare data for the new dataset (graph)
+                const newDataset = {
+                    label: `y = ${equation}`,  // Label will show the equation in the legend
+                    borderColor: color,
+                    borderDash: pattern === "dashed" ? [5, 5] : (pattern === "dotted" ? [2, 2] : []),  // Set dash pattern
+                    fill: false,
+                    data: []  // Placeholder for the data points
+                };
+
+                // Calculate data points for the given equation
+                for (let x = -10; x <= 10; x += 0.1) {
+                    const y = eval(equation.replace(/x/g, x)); // Evaluate the equation
+                    newDataset.data.push({ x: x, y: y });  // Add (x, y) pairs to the dataset
+                }
+
+                // Clear previous chart instance if it exists
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+
+                // Create a new chart instance
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [...datasets, newDataset], // Include all datasets
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom'
+                            },
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                datasets.push(newDataset); // Store dataset for future reference
+            });
+
+            // Handle Clear Graph Button
+            document.getElementById('clearGraphBtn').addEventListener('click', () => {
+                if (chartInstance) {
+                    chartInstance.destroy(); // Destroy the current chart instance
+                    datasets = []; // Clear datasets
+                }
+                const ctx = document.getElementById('graphCanvas').getContext('2d');
+                ctx.clearRect(0, 0, graphCanvas.width, graphCanvas.height); // Clear canvas
+            });
+
+            // Submit Feedback
+            document.getElementById('feedback-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const studentUsername = document.getElementById('studentUsername').value;
+                const feedbackMessage = document.getElementById('feedbackMessage').value;
+
+                fetch('/submit-feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentUsername, feedbackMessage })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('feedback-status').textContent = data.message;
+                    document.getElementById('feedback-form').reset();
+                });
+            });
+
+            // Event delegation for feedback buttons
+            document.getElementById('student-graphs-container').addEventListener('click', (e) => {
+                if (e.target.classList.contains('view-feedback-btn')) {
+                    const studentUsername = e.target.dataset.username;
+                    const graphId = e.target.dataset.graphId;
+                    fetch(`/get-feedback/${studentUsername}/${graphId}`)
+                        .then(response => response.json())
+                        .then(feedback => alert(feedback.message));
+                }
+            });
+        });
+
+        // Function to switch tabs
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.style.display = 'none');
+            document.getElementById(tabName).style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+
+

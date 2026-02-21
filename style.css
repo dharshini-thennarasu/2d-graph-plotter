@@ -1,0 +1,88 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, #7b2bbf, #e9a1e1); /* Violet themed gradient background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #0f0f0e; /* Text color */
+}
+
+.container {
+    background-color: rgba(228, 223, 229, 0.735); /* Slightly transparent white background */
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(246, 237, 237, 0.977); /* Softer shadow for depth */
+    text-align: center;
+    width: 50%;
+    max-width: 500px;
+}
+
+h1, h2 {
+    margin-bottom: 20px;
+    color: #5d1194; /* Darker violet for headings */
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input, select, textarea {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #1b1919;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #6c63ff; /* Violet button color */
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s; /* Smooth hover effect */
+}
+
+button:hover {
+    background-color: #e8e6e1; /* Darker violet on hover */
+}
+
+.tab-content {
+    margin-top: 20px;
+}
+
+.tabs {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+#graphContainer {
+    width: 100%; /* Full width */
+    max-width: 600px; /* Max width of 600px */
+    margin: auto;
+    text-align: center;
+}
+/* Styles for the canvas */
+#graphCanvas {
+    width: 100%; /* Full width of the container */
+    height: 200px; /* Fixed height */
+    background-color: #f0f0f0; /* Light background for the canvas */
+    border: 2px solid #6c63ff; /* Violet border */
+    border-radius: 4px; /* Rounded corners */
+}
+
+
+
